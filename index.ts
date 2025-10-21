@@ -1,77 +1,37 @@
-import "dotenv/config";
-
-import type {
-  ChatCompletionCreateParams,
-  ChatCompletionMessageParam,
-} from "openai/resources/chat/completions";
-
-import { OpenAI, type ClientOptions } from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import promptSync from "prompt-sync";
 import chalk from "chalk";
 
-const MODEL = "zai-org/GLM-4.6:zai-org";
-const HF_API_TOKEN: string | undefined = process.env.HF_API_TOKEN;
-
-if (!HF_API_TOKEN) {
-  console.error(
-    chalk.red(
-      "Error: Hugging Face API token (HF_API_TOKEN) not set in environment variables.",
-    ),
-  );
-  process.exit(1);
-}
-
-const client = new OpenAI({
-  baseURL: "https://router.huggingface.co/v1",
-  apiKey: process.env.HF_API_TOKEN,
-} as ClientOptions);
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY || "");
 
 const prompt = promptSync();
 
-const messages: ChatCompletionMessageParam[] = [
-  {
-    role: "system",
-    content: "You are a helpful assistant. Use English for start.",
-  },
-];
+async function run() {
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-async function main() {
-  console.log(
-    chalk.green("🤖 Welcome to your terminal AI chatbot (type 'exit' to quit)"),
-  );
+  const chat = model.startChat({
+    history: [],
+    generationConfig: {
+      temperature: 0.9,
+    },
+  });
+
+  console.log(chalk.blueBright('🤖 Gemini Chatbot (type "exit" to quit)'));
 
   while (true) {
-    const input: string = prompt(chalk.blue("You: ")) ?? "";
-
-    if (input.toLowerCase() === "exit") {
-      console.log(chalk.green("👋 Goodbye!"));
+    const userInput = prompt(chalk.green("You: "));
+    if (userInput.trim().toLowerCase() === "exit") {
+      console.log(chalk.yellow("Goodbye!"));
       break;
     }
 
-    messages.push({ role: "user", content: input });
-
-    if (messages.length > 10) messages.splice(0, messages.length - 10);
-
-    console.log(chalk.gray("Thinking..."));
-
     try {
-      const chatParams: ChatCompletionCreateParams = {
-        model: MODEL,
-        messages: messages,
-      };
-
-      const chatCompletion = await client.chat.completions.create(chatParams);
-
-      const message = chatCompletion.choices?.[0]?.message?.content;
-
-      if (message) {
-        console.log(chalk.yellow("AI:"), message);
-      } else {
-        console.log(chalk.red("AI returned an empty response."));
-      }
+      const result = await chat.sendMessage(userInput);
+      const reply = result.response.text();
+      console.log(chalk.cyan("Gemini:"), reply);
     } catch (error: unknown) {
       if (error instanceof Error) {
-        console.error(chalk.red("OpenAI API Error:"), error.message);
+        console.error(chalk.red("❌ Error:"), error.message);
       } else {
         console.error(chalk.red("Unknown error occurred."), error);
       }
@@ -79,4 +39,4 @@ async function main() {
   }
 }
 
-main();
+run().catch(console.error);
