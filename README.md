@@ -30,8 +30,8 @@ A simple terminal-based AI chatbot built with Bun and TypeScript, leveraging Hug
 1. Clone this repository:
 
    ```bash
-   git clone https://github.com/yourusername/your-repo-name.git
-   cd your-repo-name
+   git clone https://github.com/obbylee/simple-ai-chatbot.git
+   cd simple-ai-chatbot
    ```
 
 2. Create a .env file in the root directory and add your Hugging Face API token:
